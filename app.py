@@ -1,4 +1,27 @@
 import streamlit as st
+
+# --- Simple password login ---
+def check_password():
+    def password_entered():
+        if st.session_state["password"] == st.secrets["password"]:
+            st.session_state["authenticated"] = True
+            del st.session_state["password"]
+        else:
+            st.session_state["authenticated"] = False
+
+    if "authenticated" not in st.session_state:
+        st.text_input("Enter password:", type="password", on_change=password_entered, key="password")
+        return False
+    elif not st.session_state["authenticated"]:
+        st.text_input("Enter password:", type="password", on_change=password_entered, key="password")
+        st.error("Incorrect password.")
+        return False
+    else:
+        return True
+
+if not check_password():
+    st.stop()
+
 import fitz  # PyMuPDF
 import pandas as pd
 import re
