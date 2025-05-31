@@ -24,15 +24,14 @@ if uploaded_files:
         invoice_number_match = re.search(r"INV\d+", file.name)
         invoice_number = invoice_number_match.group() if invoice_number_match else ""
 
-        # Extract invoice date as the line immediately above "Net 30"
+        # Extract invoice date: line before "Net 30"
         invoice_date = ""
         lines = combined_text.splitlines()
         for i, line in enumerate(lines):
             if "Net 30" in line and i > 0:
-                possible_date_line = lines[i - 1].strip()
-                date_match = re.search(r"\d{2}/\d{2}/\d{2}", possible_date_line)
+                date_match = re.search(r"\d{2}/\d{2}/\d{2}", lines[i - 1])
                 if date_match:
-                    invoice_date = date_match.group(0)
+                    invoice_date = date_match.group()
                 break
 
         # Extract total amount
