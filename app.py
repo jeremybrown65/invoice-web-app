@@ -28,11 +28,11 @@ if uploaded_files:
         invoice_number_match = re.search(r"INV\d+", file.name)
         invoice_number = invoice_number_match.group() if invoice_number_match else ""
 
-                # Extract invoice date using proximity to the keyword
+                # Extract invoice date by finding "Invoice Date" followed by a date nearby
         invoice_date = ""
-        date_context = re.search(r"Invoice Date\s*[\n\r]*\s*(\d{2}/\d{2}/\d{2})", combined_text, re.IGNORECASE)
-        if date_context:
-            invoice_date = date_context.group(1)
+        invoice_date_pattern = re.search(r"Invoice Date\s*[\r\n]+[\s]*([0-9]{2}/[0-9]{2}/[0-9]{2})", combined_text, re.IGNORECASE)
+        if invoice_date_pattern:
+            invoice_date = invoice_date_pattern.group(1)
 
         # Extract total amount by finding last match of Total Amount or Amount Due followed by money
         total_amount = ""
