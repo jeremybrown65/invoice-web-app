@@ -20,15 +20,11 @@ if uploaded_files:
         for page in pdf:
             combined_text += page.get_text()
 
-        # Show raw text for debugging
-        with st.expander(f"Raw text from {file.name}"):
-            st.text(combined_text)
-
         # Extract invoice number from filename
         invoice_number_match = re.search(r"INV\d+", file.name)
         invoice_number = invoice_number_match.group() if invoice_number_match else ""
 
-                # Extract invoice date as the line immediately above "Net 30"
+        # Extract invoice date as the line immediately above "Net 30"
         invoice_date = ""
         lines = combined_text.splitlines()
         for i, line in enumerate(lines):
@@ -39,13 +35,13 @@ if uploaded_files:
                     invoice_date = date_match.group(0)
                 break
 
-
-        # Extract total amount by finding last match of Total Amount or Amount Due followed by money
+        # Extract total amount
         total_amount = ""
-        total_matches = re.findall(r"(?:Total Amount|Amount Due)[^\d$]*(\$?\d{1,3}(?:,\d{3})*(?:\.\d{2})?)", combined_text, re.IGNORECASE)
-        if total_matches:
-            total_amount = total_matches[-1].replace("$", "")
-
+        for line in lines:
+            if "Total Amount" in line or "Amount Due" in line:
+                amount_match = re.search(r"\$?(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)", line)
+                if amount_match:
+                    total_amount = amount_match.group(1)
 
         # Extract job name from file name (after the invoice number)
         job_name = file.name.split("-")[-1].replace(".pdf", "").strip()
