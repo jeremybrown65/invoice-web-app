@@ -13,22 +13,26 @@ def extract_invoice_data(text, filename):
     import re
     import os
 
-    # Flatten and clean the text
+    # Normalize text
     lines = text.splitlines()
-    normalized_text = "\n".join([line.strip() for line in lines if line.strip()])
+    clean_lines = [line.strip() for line in lines if line.strip()]
+    full_text = "\n".join(clean_lines)
 
-    # Match fields that might be on the same line or next line
-    invoice_number = re.search(r"Invoice No\.?\s*:?[\s\n]+(\S+)", normalized_text, re.IGNORECASE)
-    invoice_date = re.search(r"Invoice Date\s*:?[\s\n]+(\d{1,2}/\d{1,2}/\d{2,4})", normalized_text, re.IGNORECASE)
-    total_amount = re.search(r"(Total Amount|Amount Due)\s*:?[\s\n]+\$?([\d,]+\.\d{2})", normalized_text, re.IGNORECASE)
+    # Invoice number from filename
+    invoice_match = re.search(r"Invoice-([\w\-]+)", filename)
+    invoice_number = invoice_match.group(1).strip() if invoice_match else ''
 
-    invoice_number = invoice_number.group(1).strip() if invoice_number else ''
-    invoice_date = invoice_date.group(1).strip() if invoice_date else ''
-    total_amount = total_amount.group(2).strip() if total_amount else ''
-
-    # Extract job name from file name
-    job_match = re.search(r"Invoice-\S+\s*-\s*(.+)\.pdf", filename, re.IGNORECASE)
+    # Job name from filename
+    job_match = re.search(r"Invoice-[\w\-]+\s*-\s*(.+)\.pdf", filename)
     job_name = job_match.group(1).strip() if job_match else os.path.splitext(filename)[0]
+
+    # Invoice date from text
+    invoice_date_match = re.search(r"Invoice Date\s+(\d{2}/\d{2}/\d{2,4})", full_text, re.IGNORECASE)
+    invoice_date = invoice_date_match.group(1).strip() if invoice_date_match else ''
+
+    # Total amount from text
+    total_amount_match = re.search(r"(Total Amount|Amount Due)\s+\$?([\d,]+\.\d{2})", full_text, re.IGNORECASE)
+    total_amount = total_amount_match.group(2).strip() if total_amount_match else ''
 
     return {
         "Invoice Number": invoice_number,
