@@ -34,4 +34,6 @@ def extract_invoice_data(text, filename):
     combined_text = "\n".join(combined_lines)
 
     # Extract fields
-    invoice_number = re.search(r"Invoice No\.?\s+(\S+)", combined_text, re.I
+    invoice_number = re.search(r"Invoice No\.?\s+(\S+)", combined_text, re.IGNORECASE)
+    invoice_date = re.search(r"Invoice Date\s+(\d{1,2}/\d{1,2}/\d{2,4})", combined_text, re.IGNORECASE)
+    total_amount = re.search(r"(Total Amount|Amount Due)\s+\$?(_
