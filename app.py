@@ -36,11 +36,20 @@ if uploaded_files:
 
         # Extract total amount
         total_amount = ""
-        for line in lines:
+                for i, line in enumerate(lines):
             if "Total Amount" in line or "Amount Due" in line:
+                # First, check same line
                 amount_match = re.search(r"\$?(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)", line)
                 if amount_match:
                     total_amount = amount_match.group(1)
+                    break
+                # Then, check next line if needed
+                elif i + 1 < len(lines):
+                    next_line_match = re.search(r"\$?(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)", lines[i + 1])
+                    if next_line_match:
+                        total_amount = next_line_match.group(1)
+                        break
+
 
         # Extract job name from file name (after the invoice number)
         job_name = file.name.split("-")[-1].replace(".pdf", "").strip()
