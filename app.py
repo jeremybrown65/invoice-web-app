@@ -10,33 +10,23 @@ st.title("📄 Invoice Processor Web App")
 uploaded_files = st.file_uploader("Upload PDF invoices", type="pdf", accept_multiple_files=True)
 
 def extract_invoice_data(text, filename):
+    import re
+    import os
+
+    # Flatten and clean the text
     lines = text.splitlines()
-    combined_lines = []
-    i = 0
-    while i < len(lines):
-        line = lines[i].strip()
-        if line in ["Invoice No.", "Invoice Date", "Amount Due", "Total Amount", "Due Date"]:
-            for j in range(1, 3):
-                if i + j < len(lines) and lines[i + j].strip():
-                    combined_lines.append(f"{line} {lines[i + j].strip()}")
-                    i += j
-                    break
-            else:
-                combined_lines.append(line)
-        else:
-            combined_lines.append(line)
-        i += 1
+    normalized_text = "\n".join([line.strip() for line in lines if line.strip()])
 
-    combined_text = "\n".join(combined_lines)
+    # Match fields that might be on the same line or next line
+    invoice_number = re.search(r"Invoice No\.?\s*:?[\s\n]+(\S+)", normalized_text, re.IGNORECASE)
+    invoice_date = re.search(r"Invoice Date\s*:?[\s\n]+(\d{1,2}/\d{1,2}/\d{2,4})", normalized_text, re.IGNORECASE)
+    total_amount = re.search(r"(Total Amount|Amount Due)\s*:?[\s\n]+\$?([\d,]+\.\d{2})", normalized_text, re.IGNORECASE)
 
-    invoice_number_match = re.search(r"Invoice No\.?\s+(\S+)", combined_text, re.IGNORECASE)
-    invoice_date_match = re.search(r"Invoice Date\s+(\d{1,2}/\d{1,2}/\d{2,4})", combined_text, re.IGNORECASE)
-    total_amount_match = re.search(r"(Total Amount|Amount Due)\s+\$?([\d,]+\.\d{2})", combined_text, re.IGNORECASE)
+    invoice_number = invoice_number.group(1).strip() if invoice_number else ''
+    invoice_date = invoice_date.group(1).strip() if invoice_date else ''
+    total_amount = total_amount.group(2).strip() if total_amount else ''
 
-    invoice_number = invoice_number_match.group(1) if invoice_number_match else ''
-    invoice_date = invoice_date_match.group(1) if invoice_date_match else ''
-    total_amount = total_amount_match.group(2) if total_amount_match else ''
-
+    # Extract job name from file name
     job_match = re.search(r"Invoice-\S+\s*-\s*(.+)\.pdf", filename, re.IGNORECASE)
     job_name = job_match.group(1).strip() if job_match else os.path.splitext(filename)[0]
 
@@ -46,6 +36,7 @@ def extract_invoice_data(text, filename):
         "Job Name": job_name,
         "Total Amount": total_amount
     }
+
 
 if uploaded_files:
     extracted_data = []
