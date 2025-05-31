@@ -5,15 +5,19 @@ import pandas as pd
 from io import BytesIO
 
 def extract_invoice_data(text, filename):
-    invoice_number = re.search(r"Invoice No\.?\s*[:\-]?\s*(\S+)", text, re.IGNORECASE)
-    invoice_date = re.search(r"Invoice Date\s*[:\-]?\s*(\d{2}/\d{2}/\d{2,4})", text, re.IGNORECASE)
-    total_amount = re.search(r"Total Amount\s*[:\-]?\s*\$?([\d,]+\.\d{2})", text, re.IGNORECASE)
+    # Extract invoice number using a broader pattern
+    invoice_number_match = re.search(r"(Invoice\s+No\.?|Invoice\s+#?)\s*[:\-]?\s*(\S+)", text, re.IGNORECASE)
+    invoice_number = invoice_number_match.group(2) if invoice_number_match else ''
 
-    invoice_number = invoice_number.group(1) if invoice_number else ''
-    invoice_date = invoice_date.group(1) if invoice_date else ''
-    total_amount = total_amount.group(1) if total_amount else ''
+    # Extract invoice date using multiple formats
+    date_match = re.search(r"(Invoice\s+Date)\s*[:\-]?\s*(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})", text, re.IGNORECASE)
+    invoice_date = date_match.group(2) if date_match else ''
 
-    # Extract job name from file name, e.g., "Invoice-01-INVXXXX - JOB NAME.pdf"
+    # Extract total using various labels
+    total_match = re.search(r"(Total\s+Amount|Amount\s+Due)\s*[:\-]?\s*\$?([\d,]+\.\d{2})", text, re.IGNORECASE)
+    total_amount = total_match.group(2) if total_match else ''
+
+    # Extract job name from file name
     job_match = re.search(r"Invoice-\S+\s*-\s*(.+)\.pdf", filename, re.IGNORECASE)
     job_name = job_match.group(1).strip() if job_match else ''
 
@@ -23,6 +27,7 @@ def extract_invoice_data(text, filename):
         "Job Name": job_name,
         "Total Amount": total_amount
     }
+
 
 def process_pdf(uploaded_file):
     doc = fitz.open(stream=uploaded_file.read(), filetype="pdf")
