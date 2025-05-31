@@ -53,8 +53,9 @@ if uploaded_files:
             doc.close()
 
             # ✅ Show raw extracted text
-            with st.expander(f"📄 Raw text from: {uploaded_file.name}"):
-                st.text(text)
+with st.expander(f"📄 Raw text from: {uploaded_file.name}"):
+    st.text(text)
+
 
             # Extract and store data
             data = extract_invoice_data(text, uploaded_file.name)
