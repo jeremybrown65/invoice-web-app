@@ -1,56 +1,57 @@
 import streamlit as st
-import pytesseract
-from pdf2image import convert_from_bytes
-from PIL import Image
-import io
+import fitz  # PyMuPDF
 import re
 import pandas as pd
-from datetime import datetime
+from io import BytesIO
 
-st.set_page_config(page_title="Invoice Batch Processor", layout="wide")
-st.title("📄 Batch Invoice Processor")
+def extract_invoice_data(text, filename):
+    invoice_number = re.search(r"Invoice No\.?\s*[:\-]?\s*(\S+)", text, re.IGNORECASE)
+    invoice_date = re.search(r"Invoice Date\s*[:\-]?\s*(\d{2}/\d{2}/\d{2,4})", text, re.IGNORECASE)
+    total_amount = re.search(r"Total Amount\s*[:\-]?\s*\$?([\d,]+\.\d{2})", text, re.IGNORECASE)
 
-uploaded_files = st.file_uploader("Upload Invoice PDFs", type="pdf", accept_multiple_files=True)
+    invoice_number = invoice_number.group(1) if invoice_number else ''
+    invoice_date = invoice_date.group(1) if invoice_date else ''
+    total_amount = total_amount.group(1) if total_amount else ''
 
-data = []
-
-def extract_text_from_pdf(pdf_bytes):
-    images = convert_from_bytes(pdf_bytes)  # Remove page limit
-    full_text = ""
-    for img in images:
-        full_text += pytesseract.image_to_string(img)
-    return full_text
-
-
-def extract_fields(text, filename):
-    invoice_number = re.search(r'Invoice\s*(No\.?|#)?\s*([A-Z0-9\-]+)', text, re.IGNORECASE)
-    date_match = re.search(r'Invoice\s*Date\s*[:\-]?\s*([0-9/]{6,})', text, re.IGNORECASE)
-    total_match = re.search(r'Total\s*Amount\s*\$?\s*([\d,]+\.\d{2})', text, re.IGNORECASE)
-
-    job_name = filename.split(" - ", 1)[1].rsplit(".pdf", 1)[0] if " - " in filename else filename.replace(".pdf", "")
+    # Extract job name from file name, e.g., "Invoice-01-INVXXXX - JOB NAME.pdf"
+    job_match = re.search(r"Invoice-\S+\s*-\s*(.+)\.pdf", filename, re.IGNORECASE)
+    job_name = job_match.group(1).strip() if job_match else ''
 
     return {
-        "Invoice Number": invoice_number.group(2) if invoice_number else "",
-        "Invoice Date": date_match.group(1) if date_match else "",
+        "Invoice Number": invoice_number,
+        "Invoice Date": invoice_date,
         "Job Name": job_name,
-        "Total": total_match.group(1) if total_match else ""
+        "Total Amount": total_amount
     }
 
-if uploaded_files:
-    for file in uploaded_files:
-        text = extract_text_from_pdf(file.read())
-        fields = extract_fields(text, file.name)
-        data.append(fields)
+def process_pdf(uploaded_file):
+    doc = fitz.open(stream=uploaded_file.read(), filetype="pdf")
+    text = ""
+    for page in doc:
+        text += page.get_text()
+    return text
 
-    df = pd.DataFrame(data)
+st.title("📄 Invoice Scanner (Streamlit Web App)")
+
+uploaded_files = st.file_uploader("Upload one or more invoice PDFs", type="pdf", accept_multiple_files=True)
+
+if uploaded_files:
+    all_data = []
+
+    for file in uploaded_files:
+        text = process_pdf(file)
+        data = extract_invoice_data(text, file.name)
+        all_data.append(data)
+
+    df = pd.DataFrame(all_data)
     st.dataframe(df)
 
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    output = io.BytesIO()
-    df.to_excel(output, index=False, engine='openpyxl')
+    # Offer download of Excel
+    buffer = BytesIO()
+    df.to_excel(buffer, index=False, engine='openpyxl')
     st.download_button(
         label="📥 Download Excel File",
-        data=output.getvalue(),
-        file_name=f"invoice_data_{timestamp}.xlsx",
+        data=buffer.getvalue(),
+        file_name="invoice_data.xlsx",
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
