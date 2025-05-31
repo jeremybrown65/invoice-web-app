@@ -36,22 +36,14 @@ if uploaded_files:
                     invoice_date = date_match.group(0)
                     break
 
-        # Extract total amount from the line with "Total Amount" or "Amount Due"
-        total_amount = ""
-        for i, line in enumerate(lines):
-            if "Total Amount" in line or "Amount Due" in line:
-                # Try to extract from same line
-                amount_match = re.search(r"\$?(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)", line)
-                if amount_match:
-                    total_amount = amount_match.group(1)
-                    break
-                # Try next line if needed
-                elif i + 1 < len(lines):
-                    next_line = lines[i + 1].strip()
-                    next_line_match = re.search(r"\$?(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)", next_line)
-                    if next_line_match:
-                        total_amount = next_line_match.group(1)
-                        break
+        # Extract total amount by searching backwards from "Remit Information"
+total_amount = ""
+if "Remit Information" in combined_text:
+    section = combined_text.split("Remit Information")[0]
+    matches = re.findall(r"\$?(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)", section)
+    if matches:
+        total_amount = matches[-1]  # Last match before Remit Information
+
 
         # Extract job name from file name (after invoice number)
         job_name = file.name.split("-")[-1].replace(".pdf", "").strip()
