@@ -20,18 +20,18 @@ if uploaded_files:
         for page in pdf:
             combined_text += page.get_text()
 
-        # Split text into lines once for reuse
         lines = combined_text.splitlines()
 
         # Extract invoice number from filename
         invoice_number_match = re.search(r"INV\d+", file.name)
         invoice_number = invoice_number_match.group() if invoice_number_match else ""
 
-        # Extract invoice date from line above "Net 30"
+        # Extract invoice date by locating "Net 30" and using the line before it
         invoice_date = ""
         for i, line in enumerate(lines):
             if "Net 30" in line and i > 0:
-                date_match = re.search(r"\d{2}/\d{2}/\d{2}", lines[i - 1])
+                date_line = lines[i - 1].strip()
+                date_match = re.search(r"\d{2}/\d{2}/\d{2}", date_line)
                 if date_match:
                     invoice_date = date_match.group(0)
                     break
@@ -40,17 +40,20 @@ if uploaded_files:
         total_amount = ""
         for i, line in enumerate(lines):
             if "Total Amount" in line or "Amount Due" in line:
+                # Try to extract from same line
                 amount_match = re.search(r"\$?(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)", line)
                 if amount_match:
                     total_amount = amount_match.group(1)
                     break
+                # Try next line if needed
                 elif i + 1 < len(lines):
-                    next_line_match = re.search(r"\$?(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)", lines[i + 1])
+                    next_line = lines[i + 1].strip()
+                    next_line_match = re.search(r"\$?(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)", next_line)
                     if next_line_match:
                         total_amount = next_line_match.group(1)
                         break
 
-        # Extract job name from file name (after the invoice number)
+        # Extract job name from file name (after invoice number)
         job_name = file.name.split("-")[-1].replace(".pdf", "").strip()
 
         extracted_data.append({
@@ -64,7 +67,7 @@ if uploaded_files:
     st.subheader("Extracted Invoice Data")
     st.dataframe(df)
 
-    # Download link
+    # Excel download
     def convert_df(df):
         output = BytesIO()
         with pd.ExcelWriter(output, engine='openpyxl') as writer:
