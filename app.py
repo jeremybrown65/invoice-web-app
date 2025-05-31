@@ -26,26 +26,24 @@ if uploaded_files:
         invoice_number_match = re.search(r"INV\d+", file.name)
         invoice_number = invoice_number_match.group() if invoice_number_match else ""
 
-        # Extract invoice date by locating "Net 30" and using the line before it
+        # Extract invoice date: line above "Net 30"
         invoice_date = ""
         for i, line in enumerate(lines):
             if "Net 30" in line and i > 0:
-                date_line = lines[i - 1].strip()
-                date_match = re.search(r"\d{2}/\d{2}/\d{2}", date_line)
+                date_match = re.search(r"\d{2}/\d{2}/\d{2}", lines[i - 1])
                 if date_match:
-                    invoice_date = date_match.group(0)
-                    break
+                    invoice_date = date_match.group()
+                break
 
-        # Extract total amount by searching backwards from "Remit Information"
-total_amount = ""
-if "Remit Information" in combined_text:
-    section = combined_text.split("Remit Information")[0]
-    matches = re.findall(r"\$?(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)", section)
-    if matches:
-        total_amount = matches[-1]  # Last match before Remit Information
+        # Extract total amount: last amount before "Remit Information"
+        total_amount = ""
+        if "Remit Information" in combined_text:
+            section = combined_text.split("Remit Information")[0]
+            matches = re.findall(r"\$?(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)", section)
+            if matches:
+                total_amount = matches[-1]
 
-
-        # Extract job name from file name (after invoice number)
+        # Extract job name from file name (after the invoice number)
         job_name = file.name.split("-")[-1].replace(".pdf", "").strip()
 
         extracted_data.append({
@@ -59,7 +57,7 @@ if "Remit Information" in combined_text:
     st.subheader("Extracted Invoice Data")
     st.dataframe(df)
 
-    # Excel download
+    # Download link
     def convert_df(df):
         output = BytesIO()
         with pd.ExcelWriter(output, engine='openpyxl') as writer:
