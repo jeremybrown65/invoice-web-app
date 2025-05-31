@@ -28,18 +28,18 @@ if uploaded_files:
         invoice_number_match = re.search(r"INV\d+", file.name)
         invoice_number = invoice_number_match.group() if invoice_number_match else ""
 
-        # Process line-by-line for invoice date and total amount
+                # Extract invoice date using proximity to the keyword
         invoice_date = ""
+        date_context = re.search(r"Invoice Date\s*[\n\r]*\s*(\d{2}/\d{2}/\d{2})", combined_text, re.IGNORECASE)
+        if date_context:
+            invoice_date = date_context.group(1)
+
+        # Extract total amount by finding last match of Total Amount or Amount Due followed by money
         total_amount = ""
-        for line in combined_text.splitlines():
-            if "Invoice Date" in line:
-                date_match = re.search(r"(\d{2}/\d{2}/\d{2})", line)
-                if date_match:
-                    invoice_date = date_match.group(1)
-            if "Total Amount" in line or "Amount Due" in line:
-                amount_match = re.search(r"\$?(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)", line)
-                if amount_match:
-                    total_amount = amount_match.group(1)
+        total_matches = re.findall(r"(?:Total Amount|Amount Due)[^\d$]*(\$?\d{1,3}(?:,\d{3})*(?:\.\d{2})?)", combined_text, re.IGNORECASE)
+        if total_matches:
+            total_amount = total_matches[-1].replace("$", "")
+
 
         # Extract job name from file name (after the invoice number)
         job_name = file.name.split("-")[-1].replace(".pdf", "").strip()
