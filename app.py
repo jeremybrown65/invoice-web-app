@@ -43,15 +43,14 @@ uploaded_files = st.file_uploader("Upload one or more invoice PDFs", type="pdf",
 if uploaded_files:
     all_data = []
 
-  for file in uploaded_files:
-    text = process_pdf(file)
+    for file in uploaded_files:
+        text = process_pdf(file)
 
-    # 🔍 Show raw extracted text for debugging
-    st.text_area(f"Extracted Text from {file.name}", text, height=300)
+        # 🔍 Show raw extracted text for debugging
+        st.text_area(f"Extracted Text from {file.name}", text, height=300)
 
-    data = extract_invoice_data(text, file.name)
-    all_data.append(data)
-
+        data = extract_invoice_data(text, file.name)
+        all_data.append(data)
 
     df = pd.DataFrame(all_data)
     st.dataframe(df)
