@@ -24,26 +24,23 @@ if uploaded_files:
         invoice_number_match = re.search(r"INV\d+", file.name)
         invoice_number = invoice_number_match.group() if invoice_number_match else ""
 
-        # Extract invoice date: line before "Net 30"
+                # Extract invoice date (line above "Net 30")
         invoice_date = ""
-        lines = combined_text.splitlines()
         for i, line in enumerate(lines):
             if "Net 30" in line and i > 0:
                 date_match = re.search(r"\d{2}/\d{2}/\d{2}", lines[i - 1])
                 if date_match:
-                    invoice_date = date_match.group()
-                break
+                    invoice_date = date_match.group(0)
+                    break
 
-        # Extract total amount
+        # Extract total amount (from line or line after)
         total_amount = ""
-                for i, line in enumerate(lines):
+        for i, line in enumerate(lines):
             if "Total Amount" in line or "Amount Due" in line:
-                # First, check same line
                 amount_match = re.search(r"\$?(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)", line)
                 if amount_match:
                     total_amount = amount_match.group(1)
                     break
-                # Then, check next line if needed
                 elif i + 1 < len(lines):
                     next_line_match = re.search(r"\$?(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)", lines[i + 1])
                     if next_line_match:
